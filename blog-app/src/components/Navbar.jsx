@@ -18,7 +18,7 @@ export default function Navbar({ user, onLogout }) {
     <nav className="sticky top-0 bg-white shadow-sm z-50">
       <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="text-2xl font-bold text-primary">
-          📝 MyBlog
+          📝 Dupchu's Blog
         </Link>
 
         {/* Desktop Menu */}
@@ -32,7 +32,7 @@ export default function Navbar({ user, onLogout }) {
             </Link>
           )}
           <Link to="/posts" className="text-primary hover:text-secondary transition">
-            My Vlog
+            View Posts
           </Link>
 
           {user ? (
@@ -84,7 +84,7 @@ export default function Navbar({ user, onLogout }) {
             </Link>
           )}
           <Link to="/posts" className="text-primary hover:text-secondary transition" onClick={() => setMobileMenuOpen(false)}>
-            My Vlog
+            View Posts
           </Link>
 
           {user ? (
