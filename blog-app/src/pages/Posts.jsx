@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { getPosts, createPost, deletePost, updatePost } from '../utils/posts'
 import { getUserRole } from '../utils/auth'
 
@@ -341,8 +342,31 @@ export default function Posts({ user }) {
                     <p className="text-sm text-gray-400 mb-4">
                       {new Date(post.created_at).toLocaleDateString()}
                     </p>
-                    <div className="text-secondary mb-6 leading-relaxed whitespace-pre-wrap break-words prose prose-sm max-w-none">
-                      <ReactMarkdown>{isExpanded ? post.content : preview}</ReactMarkdown>
+                    <div className="prose prose-lg max-w-none dark:prose-invert mb-6 text-secondary">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-6 mb-3 text-primary" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="text-2xl font-bold mt-5 mb-3 text-primary" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="text-xl font-bold mt-4 mb-2 text-primary" {...props} />,
+                          h4: ({node, ...props}) => <h4 className="text-lg font-bold mt-3 mb-2 text-primary" {...props} />,
+                          p: ({node, ...props}) => <p className="my-3 leading-relaxed" {...props} />,
+                          ul: ({node, ...props}) => <ul className="list-disc list-inside my-3 ml-4" {...props} />,
+                          ol: ({node, ...props}) => <ol className="list-decimal list-inside my-3 ml-4" {...props} />,
+                          li: ({node, ...props}) => <li className="my-2 ml-2" {...props} />,
+                          code: ({node, inline, ...props}) => inline ? 
+                            <code className="bg-gray-200 px-2 py-1 rounded text-sm font-mono" {...props} /> : 
+                            <code className="block bg-gray-100 p-3 rounded my-3 overflow-x-auto font-mono text-sm" {...props} />,
+                          pre: ({node, ...props}) => <pre className="bg-gray-800 text-gray-100 p-4 rounded my-3 overflow-x-auto" {...props} />,
+                          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-400 pl-4 my-3 italic text-gray-600" {...props} />,
+                          a: ({node, ...props}) => <a className="text-blue-600 hover:underline" {...props} />,
+                          table: ({node, ...props}) => <table className="border-collapse border border-gray-300 my-3 w-full" {...props} />,
+                          th: ({node, ...props}) => <th className="border border-gray-300 p-2 bg-gray-200 font-bold" {...props} />,
+                          td: ({node, ...props}) => <td className="border border-gray-300 p-2" {...props} />,
+                        }}
+                      >
+                        {isExpanded ? post.content : preview}
+                      </ReactMarkdown>
                     </div>
 
                     {isLong && (
