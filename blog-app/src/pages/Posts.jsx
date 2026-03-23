@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { getPosts, createPost, deletePost } from '../utils/posts'
+import { getPosts, createPost, deletePost, updatePost } from '../utils/posts'
 import { getUserRole } from '../utils/auth'
 
 export default function Posts({ user }) {
@@ -17,6 +17,13 @@ export default function Posts({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editPost, setEditPost] = useState({
+    title: '',
+    content: '',
+    image_url: '',
+    video_url: '',
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -80,6 +87,46 @@ export default function Posts({ user }) {
       } else {
         loadPosts()
       }
+    }
+  }
+
+  const handleStartEdit = (post) => {
+    setEditingId(post.id)
+    setEditPost({
+      title: post.title,
+      content: post.content,
+      image_url: post.image_url || '',
+      video_url: post.video_url || '',
+    })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditPost({ title: '', content: '', image_url: '', video_url: '' })
+  }
+
+  const handleUpdatePost = async (e) => {
+    e.preventDefault()
+
+    if (!editPost.title.trim() || !editPost.content.trim()) {
+      setError('Title and content are required')
+      return
+    }
+
+    const { error: err } = await updatePost(
+      editingId,
+      editPost.title,
+      editPost.content,
+      editPost.image_url || null,
+      editPost.video_url || null
+    )
+
+    if (err) {
+      setError('Failed to update post')
+    } else {
+      handleCancelEdit()
+      setError('')
+      loadPosts()
     }
   }
 
@@ -196,6 +243,72 @@ export default function Posts({ user }) {
           </div>
         )}
 
+        {/* Edit Post Form */}
+        {editingId && isAdmin && (
+          <div className="card p-8 mb-8 border-l-4 border-blue-500">
+            <h2 className="text-2xl font-bold text-primary mb-6">Edit Post</h2>
+            <form onSubmit={handleUpdatePost} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">Title</label>
+                <input
+                  type="text"
+                  value={editPost.title}
+                  onChange={(e) => setEditPost({ ...editPost, title: e.target.value })}
+                  className="input-field"
+                  placeholder="Post title..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">Content</label>
+                <textarea
+                  value={editPost.content}
+                  onChange={(e) => setEditPost({ ...editPost, content: e.target.value })}
+                  className="input-field h-40"
+                  placeholder="Write your post here..."
+                  required
+                ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">Image URL (Optional)</label>
+                <input
+                  type="url"
+                  value={editPost.image_url}
+                  onChange={(e) => setEditPost({ ...editPost, image_url: e.target.value })}
+                  className="input-field"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">YouTube URL (Optional)</label>
+                <input
+                  type="url"
+                  value={editPost.video_url}
+                  onChange={(e) => setEditPost({ ...editPost, video_url: e.target.value })}
+                  className="input-field"
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button type="submit" className="btn-primary">
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Posts List */}
         {posts.length === 0 ? (
           <div className="card p-8 text-center text-secondary">
@@ -207,8 +320,8 @@ export default function Posts({ user }) {
               const youtubeId = extractYouTubeId(post.video_url)
               const isExpanded = expandedId === post.id
               const contentWords = post.content.split(' ')
-              const isLong = contentWords.length > 80
-              const preview = isLong ? contentWords.slice(0, 80).join(' ') + '...' : post.content
+              const isLong = contentWords.length > 30
+              const preview = isLong ? contentWords.slice(0, 30).join(' ') + '...' : post.content
               
               return (
                 <div key={post.id} className="card overflow-hidden">
@@ -228,7 +341,7 @@ export default function Posts({ user }) {
                     <p className="text-sm text-gray-400 mb-4">
                       {new Date(post.created_at).toLocaleDateString()}
                     </p>
-                    <div className="text-secondary mb-6 leading-relaxed prose prose-sm max-w-none break-words">
+                    <div className="text-secondary mb-6 leading-relaxed whitespace-pre-wrap break-words prose prose-sm max-w-none">
                       <ReactMarkdown>{isExpanded ? post.content : preview}</ReactMarkdown>
                     </div>
 
@@ -256,12 +369,20 @@ export default function Posts({ user }) {
                     )}
 
                     {isAdmin && (
-                      <button
-                        onClick={() => handleDelete(post.id)}
-                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-                      >
-                        Delete Post
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleStartEdit(post)}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+                        >
+                          Edit Post
+                        </button>
+                        <button
+                          onClick={() => handleDelete(post.id)}
+                          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                        >
+                          Delete Post
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
