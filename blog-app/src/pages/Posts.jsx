@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
 import { getPosts, createPost, deletePost } from '../utils/posts'
 import { getUserRole } from '../utils/auth'
 
 export default function Posts({ user }) {
   const [posts, setPosts] = useState([])
   const [isAdmin, setIsAdmin] = useState(false)
+  const [expandedId, setExpandedId] = useState(null)
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
@@ -203,6 +205,11 @@ export default function Posts({ user }) {
           <div className="space-y-6">
             {posts.map((post) => {
               const youtubeId = extractYouTubeId(post.video_url)
+              const isExpanded = expandedId === post.id
+              const contentWords = post.content.split(' ')
+              const isLong = contentWords.length > 80
+              const preview = isLong ? contentWords.slice(0, 80).join(' ') + '...' : post.content
+              
               return (
                 <div key={post.id} className="card overflow-hidden">
                   {post.image_url && (
@@ -221,7 +228,18 @@ export default function Posts({ user }) {
                     <p className="text-sm text-gray-400 mb-4">
                       {new Date(post.created_at).toLocaleDateString()}
                     </p>
-                    <p className="text-secondary mb-6 leading-relaxed">{post.content}</p>
+                    <div className="text-secondary mb-6 leading-relaxed prose prose-sm max-w-none break-words">
+                      <ReactMarkdown>{isExpanded ? post.content : preview}</ReactMarkdown>
+                    </div>
+
+                    {isLong && (
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : post.id)}
+                        className="mb-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition text-sm"
+                      >
+                        {isExpanded ? 'Show Less' : 'View All'}
+                      </button>
+                    )}
 
                     {youtubeId && (
                       <div className="mb-6 aspect-video">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
 import { getNotes, createNote, updateNote, deleteNote } from '../utils/notes'
 
 export default function Notes({ user }) {
@@ -8,6 +9,7 @@ export default function Notes({ user }) {
   const [editingId, setEditingId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [expandedId, setExpandedId] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -116,21 +118,40 @@ export default function Notes({ user }) {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
-              {notes.map((note) => (
-                <div key={note.id} className="card p-6">
-                  <h3 className="text-xl font-bold text-primary mb-3">{note.title}</h3>
-                  <p className="text-secondary mb-4 line-clamp-3">{note.content}</p>
-                  <p className="text-xs text-gray-400 mb-4">
-                    {new Date(note.created_at).toLocaleDateString()}
-                  </p>
-                  <button
-                    onClick={() => handleDelete(note.id)}
-                    className="w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
+              {notes.map((note) => {
+                const isExpanded = expandedId === note.id
+                const contentWords = note.content.split(' ')
+                const isLong = contentWords.length > 50
+                const preview = isLong ? contentWords.slice(0, 50).join(' ') + '...' : note.content
+                
+                return (
+                  <div key={note.id} className="card p-6">
+                    <h3 className="text-xl font-bold text-primary mb-3">{note.title}</h3>
+                    <div className="text-secondary mb-4 prose prose-sm max-w-none break-words">
+                      <ReactMarkdown>{isExpanded ? note.content : preview}</ReactMarkdown>
+                    </div>
+                    <p className="text-xs text-gray-400 mb-4">
+                      {new Date(note.created_at).toLocaleDateString()}
+                    </p>
+                    <div className="flex gap-2">
+                      {isLong && (
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : note.id)}
+                          className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition text-sm"
+                        >
+                          {isExpanded ? 'Show Less' : 'View All'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(note.id)}
+                        className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
